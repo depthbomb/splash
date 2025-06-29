@@ -12,7 +12,7 @@ def create_app():
     create_feature_flag('PRETTIFY_RENDERED_JSON_ENABLED', True)
     create_feature_flag('MAINTENANCE_MODE_ENABLED', False)
 
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='../static', static_url_path='')
     app.json = ORJSONProvider(app)
     app.url_map.strict_slashes = False
 

@@ -2,10 +2,10 @@ from typing import cast
 from orjson import dumps
 from base64 import b64encode
 from splash.db.models import User
+from flask import g, url_for, redirect, Blueprint
 from splash.http.response import plaintext_response
 from splash.decorators.common import add_cache_control
 from splash.decorators.auth import requires_authentication
-from flask import g, url_for, redirect, Blueprint, Response
 
 index_bp = Blueprint('index', __name__)
 
@@ -69,15 +69,13 @@ def index():
 def get_image_short(uid: str):
     return redirect(url_for('api.v1.images.get_image', uid=uid))
 
-@index_bp.get('/favicon.ico')
-@add_cache_control(max_age=60 * 60 * 60 * 24)
-def favicon():
-    return Response(status=204)
-
 @index_bp.get('/robots.txt')
 @add_cache_control(max_age=60 * 60 * 60 * 24)
 def robots_txt():
     return plaintext_response('\n'.join([
         'User-agent: *',
-        'Disallow: /'
+        'Disallow: /',
+        'Disallow: /api',
+        'Disallow: /auth',
+        'Disallow: /health'
     ]))
