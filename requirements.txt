@@ -7,7 +7,7 @@ waitress==3.0.2
 psycopg[binary]==3.2.9
 yoyo-migrations==9.0.0
 sqlalchemy==2.0.41
-pillow==11.2.1
+pillow==11.3.0
 authlib==1.6.0
 requests==2.32.4
 boto3[crt]==1.35.99
