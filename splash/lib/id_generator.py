@@ -55,7 +55,7 @@ class IDGenerator:
         """
         Whether an ID is available.
 
-        Note that unavailable IDs are only stored for the lifetime of the application and the cache is only populated
+        Note that unavailable IDs are only stored for the lifetime of the application, and the cache is only populated
         when generating IDs via :meth:`IDGenerator.generate_available`.
         :param id_: The ID to check
         :return: `True` if the ID is available, `False` otherwise
