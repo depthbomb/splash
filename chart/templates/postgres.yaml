@@ -1,0 +1,18 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: '{{ .Values.name }}-postgres'
+  metadata:
+    labels:
+      app.kubernetes.io/name: {{ .Values.name }}
+      appkubernetes.io/component: postgres
+spec:
+  instances: {{ .Values.postgres.replicas }}
+  bootstrap:
+    initdb:
+      database: splash
+      owner: splash
+  storage:
+    size: {{ .Values.postgres.persistence.size }}
+  resources:
+    {{- toYaml .Values.postgres.resources | nindent 4 }}

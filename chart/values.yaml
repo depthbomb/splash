@@ -1,0 +1,31 @@
+name: splash
+replicas: 2
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  host: splash.super.fish
+  annotations:
+    kubernetes.io/tls-acme: "true"
+
+image:
+  repository: ghcr.io/depthbomb/splash
+  tag: latest
+  pullPolicy: Always
+
+resources:
+  limits:
+    cpu: '1'
+    memory: 1Gi
+
+postgres:
+  replicas: 2
+  persistence:
+    size: 5Gi
+  resources:
+    limits:
+      cpu: '1'
+      memory: 1Gi
