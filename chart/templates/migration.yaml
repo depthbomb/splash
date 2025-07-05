@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.name }}-migration
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+    app.kubernetes.io/component: migration
+  annotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.name }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: splash
+          command: ["yoyo", "apply", "--batch"]
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: {{ .Values.name }}-config
+          env:
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.name }}-postgres-app
+                  key: password
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
