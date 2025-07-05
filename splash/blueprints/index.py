@@ -37,16 +37,16 @@ def index():
         f"Authorization: Basic {header_value}",
         "```",
         "\n## Endpoints\n",
-        "GET /api/v1/images/{uid}",
+        "GET /images/{uid}",
         "\tReturn basic info about an image record.",
-        "GET /api/v1/images/{uid}.{extension}",
+        "GET /images/{uid}.{extension}",
         "\tReturns an image response.",
         "GET /i/{uid}.{extension}",
         "\tRedirects to the above endpoint.",
-        "PUT /api/v1/images",
+        "PUT /images",
         "\tCreates an image record with a randomly-assigned UID.",
         "\tThe successful response will include a `deletion_key` which should be kept secret as it is used to delete the image later.",
-        "DELETE /api/v1/images/{uid}/{deletion_key}",
+        "DELETE /images/{uid}/{deletion_key}",
         "\tDeletes an image record and the corresponding file.",
         "\n## Requests\n",
         "All requests must have a non-empty user agent header.",
@@ -64,13 +64,13 @@ def index():
         "...with `result` being a different shape depending on the endpoint and response status.",
         "Error responses will always include a `message` property inside `result` describing the error.",
         "\n## ShareX Support\n",
-        f"Splash supports uploading images via ShareX. You can download the custom uploader config here: {url_for('api.v1.sharex.get_config', _external=True)}",
+        f"Splash supports uploading images via ShareX. You can download the custom uploader config here: {url_for('sharex.get_config', _external=True)}",
         "This config is exclusive to **YOU** because it contains your credentials. Do not share it with anyone."
     ]))
 
 @index_bp.get('/i/<string:uid>')
 def get_image_short(uid: str):
-    return redirect(url_for('api.v1.images.get_image', uid=uid))
+    return redirect(url_for('images.get_image', uid=uid))
 
 @index_bp.get('/robots.txt')
 @add_cache_control(max_age=60 * 60 * 60 * 24)

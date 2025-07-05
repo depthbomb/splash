@@ -15,7 +15,7 @@ from splash.http.response import abort_if, abort_unless, json_response
 images_bp = Blueprint('images', __name__, url_prefix='/images')
 images_bucket = get_or_create_bucket('images', '2/second')
 
-@images_bp.put('/')  # PUT /api/v1/images
+@images_bp.put('/')  # PUT /images
 @images_bucket.consume(cost=2)
 @requires_authentication()
 def upload_image():
@@ -58,12 +58,12 @@ def upload_image():
         db.add(image)
         db.commit()
 
-        image_url = url_for('api.v1.images.get_image', uid=f'{uid}{ext}', _external=True)
+        image_url = url_for('images.get_image', uid=f'{uid}{ext}', _external=True)
 
         if use_sharex:
             return json_response({
                 'url': url_for('index.get_image_short', uid=f'{uid}{ext}', _external=True),
-                'deletion_url': url_for('api.v1.images.delete_image', uid=uid, deletion_key=deletion_key, _external=True),
+                'deletion_url': url_for('images.delete_image', uid=uid, deletion_key=deletion_key, _external=True),
             }, status_code=201)
 
         return json_response({
@@ -73,7 +73,7 @@ def upload_image():
     except:
         abort(500)
 
-@images_bp.get('/<string:uid>')  # GET /api/v1/<uid>
+@images_bp.get('/<string:uid>')  # GET /images/<uid>
 @images_bucket.consume()
 @add_cache_control(max_age=60 * 60 * 24)
 def get_image(uid: str):
@@ -108,8 +108,8 @@ def get_image(uid: str):
             'updated_at': image.updated_at,
         })
 
-@images_bp.delete('/<string:uid>/<string:deletion_key>')  # DELETE /api/v1/<uid>/<deletion_key>
-@images_bp.get('/<string:uid>/<string:deletion_key>')  # GET /api/v1/<uid>/<deletion_key>
+@images_bp.delete('/<string:uid>/<string:deletion_key>')  # DELETE /images/<uid>/<deletion_key>
+@images_bp.get('/<string:uid>/<string:deletion_key>')  # GET /images/<uid>/<deletion_key>
 @images_bucket.consume(cost=2)
 def delete_image(uid: str, deletion_key: str):
     db = cast(SASession, g.db)

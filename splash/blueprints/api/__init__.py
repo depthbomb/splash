@@ -1,5 +1,4 @@
 from datetime import datetime
-from splash.blueprints.api.v1 import v1_bp
 from splash.lib.features import get_feature
 from limits import parse, storage, strategies
 from flask import request, Response, Blueprint
@@ -7,7 +6,6 @@ from splash.http.response import abort_if, json_error
 from splash.blueprints.api.features import features_bp
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
-api_bp.register_blueprint(v1_bp)
 api_bp.register_blueprint(features_bp)
 
 daily_rate_limit_enabled = get_feature('DAILY_RATE_LIMIT_ENABLED')

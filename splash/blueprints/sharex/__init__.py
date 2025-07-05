@@ -8,7 +8,7 @@ from splash.decorators.auth import requires_authentication
 
 sharex_bp = Blueprint('sharex', __name__, url_prefix='/sharex')
 
-@sharex_bp.get('/')  # GET /api/v1/sharex
+@sharex_bp.get('/')  # GET /sharex
 @requires_authentication(redirect_to_auth=True)
 @add_cache_control(max_age=60 * 60)
 def get_config():
@@ -23,7 +23,7 @@ def get_config():
         'Name': 'Splash',
         'DestinationType': 'ImageUploader',
         'RequestMethod': 'PUT',
-        'RequestURL': url_for('api.v1.images.upload_image', _external=True),
+        'RequestURL': url_for('images.upload_image', _external=True),
         'Parameters': {
             'sharex': 'true'
         },
