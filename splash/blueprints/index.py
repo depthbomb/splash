@@ -3,6 +3,7 @@ from orjson import dumps
 from base64 import b64encode
 from splash.db.models import User
 from flask import g, url_for, redirect, Blueprint
+from splash import MAX_PIXEL_SIZE, MAX_UPLOAD_SIZE
 from splash.http.response import plaintext_response
 from splash.decorators.common import add_cache_control
 from splash.decorators.auth import requires_authentication
@@ -48,6 +49,7 @@ def index():
         "\n## Requests\n",
         "All requests must have a non-empty user agent header.",
         "Respect rate limits. Most endpoints return headers (`X-RateLimit-...`) that you should use to avoid being rate limited.",
+        f"There is currently a maximum file size limit of {MAX_UPLOAD_SIZE}B and a maximum pixel size limit of {MAX_PIXEL_SIZE} for uploads.",
         "\n## Responses\n",
         "All responses inherit a common shape:",
         "```json",
