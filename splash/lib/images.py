@@ -1,7 +1,10 @@
 from PIL import Image
 from hashlib import sha256
 from typing import Optional
+from splash import MAX_PIXEL_SIZE
 from werkzeug.datastructures import FileStorage  # noqa
+
+Image.MAX_IMAGE_PIXELS = MAX_PIXEL_SIZE
 
 _FORMAT_TO_EXTENSION = {
     'JPEG': '.jpg',

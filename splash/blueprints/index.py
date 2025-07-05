@@ -58,7 +58,7 @@ def index():
         }).decode()}",
         "```",
         "...with `result` being a different shape depending on the endpoint and response status.",
-        "Error responses will always at least include a `message` property inside `result` describing the error.",
+        "Error responses will always include a `message` property inside `result` describing the error.",
         "\n## ShareX Support\n",
         f"Splash supports uploading images via ShareX. You can download the custom uploader config here: {url_for('api.v1.sharex.get_config', _external=True)}",
         "This config is exclusive to **YOU** because it contains your credentials. Do not share it with anyone."
