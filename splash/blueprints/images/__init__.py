@@ -7,10 +7,10 @@ from splash.lib.id_generator import IDGenerator
 from splash.decorators.common import add_cache_control
 from sqlalchemy.orm.session import Session as SASession
 from splash.lib.rate_limits import get_or_create_bucket
-from splash.lib.images import hash_image_bytes, get_image_info_from_bytes
 from splash.decorators.auth import requires_authentication
 from flask import g, abort, url_for, request, Blueprint, Response
 from splash.http.response import abort_if, abort_unless, json_response
+from splash.lib.images import hash_image_bytes, get_image_info_from_bytes
 
 images_bp = Blueprint('images', __name__, url_prefix='/images')
 images_bucket = get_or_create_bucket('images', '2/second')
@@ -58,10 +58,11 @@ def upload_image():
     abort_if(size > MAX_UPLOAD_SIZE, 400, message='Uploaded file must be less than or equal to %d bytes' % MAX_UPLOAD_SIZE)
     is_valid, ext, content_type = get_image_info_from_bytes(file_contents)
     abort_unless(is_valid, 400, message='Uploaded file must be an image')
+    abort_unless(ext is not None and content_type is not None, 400, message='Uploaded image format is not supported')
 
     uid = IDGenerator.generate(8)
-    image_name = f'uploads/{uid}{ext}'
     extension = ext
+    image_name = f'uploads/{uid}{extension}'
     deletion_key = IDGenerator.generate(64, prefix='delete')
     sha256 = hash_image_bytes(file_contents)
 
@@ -83,11 +84,11 @@ def upload_image():
         db.add(image)
         db.commit()
 
-        image_url = url_for('images.get_image', uid=f'{uid}{ext}', _external=True)
+        image_url = url_for('images.get_image', uid=f'{uid}{extension}', _external=True)
 
         if use_sharex:
             return json_response({
-                'url': url_for('index.get_image_short', uid=f'{uid}{ext}', _external=True),
+                'url': url_for('index.get_image_short', uid=f'{uid}{extension}', _external=True),
                 'deletion_url': url_for('images.delete_image', uid=uid, deletion_key=deletion_key, _external=True),
             }, status_code=201)
 
