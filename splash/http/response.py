@@ -48,7 +48,7 @@ def deprecated_response(since: str, alternative: Optional[str] = None) -> _Flask
         'message': f'This endpoint has been deprecated since {since}. Refer to the API documentation for more info.'
     }
 
-    if not alternative:
+    if alternative:
         payload['alternative'] = url_for(alternative)
 
     return json_response(payload, status_code=410)
