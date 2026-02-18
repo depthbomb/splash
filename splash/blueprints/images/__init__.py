@@ -1,13 +1,13 @@
-from typing import cast, Optional
-from splash.db import Session
+from io import BytesIO
 from splash.lib.b2 import bucket
+from typing import cast, Optional
 from splash import MAX_UPLOAD_SIZE
 from splash.db.models import User, Image
 from splash.lib.id_generator import IDGenerator
 from splash.decorators.common import add_cache_control
 from sqlalchemy.orm.session import Session as SASession
 from splash.lib.rate_limits import get_or_create_bucket
-from splash.lib.images import hash_image, get_image_info
+from splash.lib.images import hash_image_bytes, get_image_info_from_bytes
 from splash.decorators.auth import requires_authentication
 from flask import g, abort, url_for, request, Blueprint, Response
 from splash.http.response import abort_if, abort_unless, json_response
@@ -50,25 +50,23 @@ def upload_image():
 
     file = request.files['file']
     use_sharex = request.args.get('sharex', 'false').lower() == 'true'
+    original_name = file.filename
 
-    is_valid, ext, content_type = get_image_info(file)
-
-    file.seek(0, 2)
-    size = file.tell()
-    file.seek(0)
+    file_contents = file.read(MAX_UPLOAD_SIZE + 1)
+    size = len(file_contents)
 
     abort_if(size > MAX_UPLOAD_SIZE, 400, message='Uploaded file must be less than or equal to %d bytes' % MAX_UPLOAD_SIZE)
+    is_valid, ext, content_type = get_image_info_from_bytes(file_contents)
     abort_unless(is_valid, 400, message='Uploaded file must be an image')
 
     uid = IDGenerator.generate(8)
     image_name = f'uploads/{uid}{ext}'
-    original_name = file.filename
     extension = ext
     deletion_key = IDGenerator.generate(64, prefix='delete')
-    sha256 = hash_image(file)
+    sha256 = hash_image_bytes(file_contents)
 
     try:
-        bucket.upload_fileobj(file, image_name, ExtraArgs={'ContentType': content_type})
+        bucket.upload_fileobj(BytesIO(file_contents), image_name, ExtraArgs={'ContentType': content_type})
 
         db = cast(SASession, g.db)
         user = cast(User, g.user)
