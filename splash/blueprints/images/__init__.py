@@ -1,4 +1,4 @@
-from typing import cast
+from typing import cast, Optional
 from splash.db import Session
 from splash.lib.b2 import bucket
 from splash import MAX_UPLOAD_SIZE
@@ -14,6 +14,33 @@ from splash.http.response import abort_if, abort_unless, json_response
 
 images_bp = Blueprint('images', __name__, url_prefix='/images')
 images_bucket = get_or_create_bucket('images', '2/second')
+
+def _get_cached_image(uid: str) -> Optional[Image]:
+    image_cache = getattr(g, '_image_cache', None)
+    if image_cache is None:
+        image_cache = {}
+        g._image_cache = image_cache
+
+    if uid in image_cache:
+        return cast(Optional[Image], image_cache[uid])
+
+    db = cast(SASession, g.db)
+    if '.' in uid:
+        name, ext_name = uid.rsplit('.', 1)
+        extension = f'.{ext_name}'
+        image = db.query(Image).filter((Image.uid == name) & (Image.extension == extension)).first()
+    else:
+        image = db.query(Image).filter(Image.uid == uid).first()
+
+    image_cache[uid] = image
+    return cast(Optional[Image], image)
+
+def _image_etag(uid: str) -> Optional[str]:
+    image = _get_cached_image(uid)
+    if image is None:
+        return None
+
+    return image.sha256
 
 @images_bp.put('/')  # PUT /images
 @images_bucket.consume(cost=2)
@@ -75,16 +102,13 @@ def upload_image():
 
 @images_bp.get('/<string:uid>')  # GET /images/<uid>
 @images_bucket.consume()
-@add_cache_control(max_age=60 * 60 * 24)
+@add_cache_control(max_age=60 * 60 * 24, etag_getter=_image_etag)
 def get_image(uid: str):
-    db = cast(SASession, g.db)
+    image = _get_cached_image(uid)
+    abort_if(not image, 404)
+    image = cast(Image, image)
+
     if '.' in uid:
-        name, ext_name = uid.rsplit('.', 1)
-        extension = f'.{ext_name}'
-        image = cast(Image, db.query(Image).filter((Image.uid == name) & (Image.extension == extension)).first())
-
-        abort_if(not image, 404)
-
         key = f'uploads/{uid}'
         obj = bucket.Object(key).get()
         return Response(
@@ -95,10 +119,6 @@ def get_image(uid: str):
                 }
         )
     else:
-        image = db.query(Image).filter(Image.uid == uid).first()
-
-        abort_if(not image, 404)
-
         return json_response({
             'original_name': image.original_name,
             'content_type': image.content_type,

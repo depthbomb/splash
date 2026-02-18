@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable
 from functools import wraps
 from flask import request, url_for, Response, make_response
 
@@ -24,21 +24,32 @@ def deprecated(removed_in: str, *, alternative_endpoint: Optional[str] = None):
         return wrapper
     return decorator
 
-def add_cache_control(*, max_age: int = 60):
+def add_cache_control(*, max_age: int = 60, etag_getter: Optional[Callable[..., Optional[str]]] = None):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(*args, **kwargs):
-            if request.headers.get('If-None-Match'):
-                res = make_response(view_func(*args, **kwargs))
+            supports_conditional = request.method in ('GET', 'HEAD')
+            etag = etag_getter(*args, **kwargs) if etag_getter is not None else None
+
+            if supports_conditional and etag is not None and request.if_none_match.contains(etag):
+                res = make_response('', 304)
                 res.cache_control.public = True
                 res.cache_control.max_age = max_age
-                res.add_etag()
-                return res.make_conditional(request)
+                res.set_etag(etag)
+                return res
 
             res = make_response(view_func(*args, **kwargs))
             res.cache_control.public = True
             res.cache_control.max_age = max_age
-            res.add_etag()
+
+            if etag is not None:
+                res.set_etag(etag)
+            elif not res.get_etag()[0]:
+                res.add_etag()
+
+            if supports_conditional:
+                return res.make_conditional(request)
+
             return res
         return wrapper
     return decorator
