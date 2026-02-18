@@ -1,5 +1,7 @@
 from flask import request
+from hmac import compare_digest
 from flask import Response, Blueprint
+from splash.env import APP_SECRET
 from splash.http.response import abort_if, json_response
 from splash.lib.features import get_feature, get_all_features, get_enabled_features, get_disabled_features
 
@@ -10,6 +12,8 @@ def verify_app_secret() -> None:
     incoming_secret = request.args.get('secret', None)
 
     abort_if(incoming_secret is None, 401, message='Missing app secret key')
+    abort_if(APP_SECRET == '', 503, message='App secret key not configured')
+    abort_if(not compare_digest(incoming_secret, APP_SECRET), 403, message='Invalid app secret key')
 
 @features_bp.get('')
 def list_features() -> Response:
