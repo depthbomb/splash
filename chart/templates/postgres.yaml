@@ -5,7 +5,7 @@ metadata:
   metadata:
     labels:
       app.kubernetes.io/name: {{ .Values.name }}
-      appkubernetes.io/component: postgres
+      app.kubernetes.io/component: postgres
 spec:
   instances: {{ .Values.postgres.replicas }}
   bootstrap:
