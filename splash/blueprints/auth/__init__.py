@@ -1,14 +1,15 @@
 from typing import cast
+from itsdangerous import BadData
 from splash.db.models import User
 from authlib.oauth2 import OAuth2Error
 from datetime import datetime, timedelta
 from splash.http.response import json_error
 from splash.lib.id_generator import IDGenerator
 from authlib.common.security import generate_token
-from splash.serializers import previous_url_serializer, user_session_serializer
 from sqlalchemy.orm.session import Session as SASession
 from splash.lib.rate_limits import get_or_create_bucket
 from authlib.integrations.requests_client import OAuth2Session
+from splash.serializers import previous_url_serializer, user_session_serializer
 from flask import g, abort, url_for, request, redirect, Response, Blueprint, after_this_request
 from splash.env import OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_TOKEN_ENDPOINT, OIDC_USERINFO_ENDPOINT, OIDC_AUTHORIZE_ENDPOINT
 
@@ -77,12 +78,19 @@ def callback():
                 db.add(user)
                 db.commit()
 
-            previous_url = previous_url_serializer.loads(request.cookies.get('previous_url', '', str))
+            previous_url_cookie = request.cookies.get('previous_url', '', str)
+            try:
+                previous_url = previous_url_serializer.loads(previous_url_cookie) if previous_url_cookie != '' else ''
+            except BadData:
+                previous_url = ''
+
             if previous_url != '':
                 res = redirect(previous_url)
                 res.delete_cookie('previous_url')
             else:
                 res = redirect('/')
+                if previous_url_cookie != '':
+                    res.delete_cookie('previous_url')
 
             res.set_cookie(
                 'user',
