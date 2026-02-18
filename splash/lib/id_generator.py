@@ -1,10 +1,14 @@
-from random import choices
+from secrets import choice
 from typing import Callable, Optional
 from string import digits, ascii_uppercase
 
 class IDGenerator:
     _characters: str = ascii_uppercase + digits
     _unavailable: list[str] = []
+
+    @staticmethod
+    def _random_chars(length: int) -> str:
+        return ''.join(choice(IDGenerator._characters) for _ in range(length))
 
     @staticmethod
     def generate(length: int, *, prefix: Optional[str] = None) -> str:
@@ -23,10 +27,10 @@ class IDGenerator:
             else:
                 random_part_length = length - prefix_and_separator_length
 
-            id_ = ''.join(choices(IDGenerator._characters, k=random_part_length))
+            id_ = IDGenerator._random_chars(random_part_length)
             id_ = f'{prefix_upper}-{id_}'
         else:
-            id_ = ''.join(choices(IDGenerator._characters, k=length))
+            id_ = IDGenerator._random_chars(length)
 
         return id_
 
