@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from splash.http.response import json_error
 from splash.lib.id_generator import IDGenerator
 from authlib.common.security import generate_token
-from splash.serializers import previous_url_serializer
+from splash.serializers import previous_url_serializer, user_session_serializer
 from sqlalchemy.orm.session import Session as SASession
 from splash.lib.rate_limits import get_or_create_bucket
 from authlib.integrations.requests_client import OAuth2Session
@@ -77,7 +77,13 @@ def callback():
             else:
                 res = redirect('/')
 
-            res.set_cookie('user', user_info['sub'], expires=datetime.now() + timedelta(days=365))
+            res.set_cookie(
+                'user',
+                user_session_serializer.dumps(user_info['sub']),
+                expires=datetime.now() + timedelta(days=365),
+                httponly=True,
+                samesite='Lax'
+            )
 
     @after_this_request
     def clear_cookies(res_: Response):
@@ -91,6 +97,6 @@ def callback():
 @auth_bp.get('/invalidate')
 def invalidate():
     res = redirect('/')
-    res.set_cookie('user', '', expires=0)
+    res.delete_cookie('user')
 
     return res

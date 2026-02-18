@@ -4,8 +4,10 @@ from sqlalchemy import or_
 from base64 import b64decode
 from splash.db import Session
 from splash.db.models import User
+from itsdangerous import BadSignature
 from splash.lib.features import get_feature
 from splash.lib.id_generator import IDGenerator
+from splash.serializers import user_session_serializer
 from sqlalchemy.orm.session import Session as SASession
 from flask import g, abort, Flask, request, Response, after_this_request
 
@@ -60,7 +62,11 @@ def register_lifecycle_hooks(app: Flask) -> None:
             if api_key:
                 filters.append(User.api_key == api_key)
             elif cookie:
-                filters.append(User.sub == cookie)
+                try:
+                    cookie_sub = user_session_serializer.loads(cookie)
+                    filters.append(User.sub == cookie_sub)
+                except BadSignature:
+                    pass
             elif auth_header and auth_header.startswith('Basic '):
                 try:
                     encoded_credentials = auth_header.split(' ', 1)[1]
