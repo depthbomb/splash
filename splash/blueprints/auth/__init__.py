@@ -15,6 +15,12 @@ from splash.env import OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_TOKEN_ENDPOINT, 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 auth_bucket = get_or_create_bucket('auth', '1/second')
 
+def _secure_cookie() -> bool:
+    if request.is_secure:
+        return True
+
+    return request.headers.get('X-Forwarded-Proto', '').lower() == 'https'
+
 @auth_bp.get('/start')
 def start_flow():
     client = OAuth2Session(OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, code_challenge_method='S256', scope='openid email profile groups')
@@ -26,8 +32,9 @@ def start_flow():
     )
 
     res = redirect(uri)
-    res.set_cookie('state', state, httponly=True, samesite='Lax')
-    res.set_cookie('cv', code_verifier, httponly=True, samesite='Lax')
+    secure_cookie = _secure_cookie()
+    res.set_cookie('state', state, httponly=True, samesite='Lax', secure=secure_cookie)
+    res.set_cookie('cv', code_verifier, httponly=True, samesite='Lax', secure=secure_cookie)
 
     return res
 
@@ -82,7 +89,8 @@ def callback():
                 user_session_serializer.dumps(user_info['sub']),
                 expires=datetime.now() + timedelta(days=365),
                 httponly=True,
-                samesite='Lax'
+                samesite='Lax',
+                secure=_secure_cookie()
             )
 
     @after_this_request

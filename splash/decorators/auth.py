@@ -14,7 +14,13 @@ def requires_authentication(*, redirect_to_auth = False):
             if g.user is None:
                 if redirect_to_auth:
                     res = redirect(url_for('auth.start_flow'))
-                    res.set_cookie('previous_url', previous_url_serializer.dumps(request.url))
+                    res.set_cookie(
+                        'previous_url',
+                        previous_url_serializer.dumps(request.url),
+                        httponly=True,
+                        samesite='Lax',
+                        secure=(request.is_secure or request.headers.get('X-Forwarded-Proto', '').lower() == 'https')
+                    )
 
                     return res
                 else:
