@@ -8,6 +8,6 @@ psycopg[binary]==3.3.3
 yoyo-migrations==9.0.0
 sqlalchemy==2.0.46
 pillow==12.1.1
-authlib==1.6.8
+authlib==1.6.9
 requests==2.32.5
 boto3[crt]==1.35.99
