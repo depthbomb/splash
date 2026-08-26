@@ -3,11 +3,12 @@ from io import BytesIO
 from PIL import Image
 import pytest
 from flask import g
+from werkzeug.datastructures import FileStorage
 from types import SimpleNamespace
 from uuid import uuid4
 
 from splash.app import create_app
-from splash.lib.images import get_image_info_from_bytes, hash_image_bytes
+from splash.lib.images import get_image_info, get_image_info_from_bytes, hash_image, hash_image_bytes
 from splash.blueprints import images as images_blueprint
 
 
@@ -22,6 +23,11 @@ def test_valid_image_info_and_hash():
 
     assert get_image_info_from_bytes(contents) == (True, '.png', 'image/png')
     assert len(hash_image_bytes(contents)) == 64
+
+    storage = FileStorage(stream=BytesIO(contents), filename='test.png')
+    assert get_image_info(storage) == (True, '.png', 'image/png')
+    assert hash_image(storage) == hash_image_bytes(contents)
+    assert storage.tell() == 0
 
 
 def test_malformed_and_unsupported_images_are_rejected():

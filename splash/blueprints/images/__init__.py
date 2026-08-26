@@ -1,4 +1,4 @@
-from io import BytesIO
+from os import SEEK_END
 from splash.lib.b2 import bucket
 from typing import cast, Optional
 from splash import MAX_UPLOAD_SIZE
@@ -10,7 +10,7 @@ from splash.lib.rate_limits import get_or_create_bucket
 from splash.decorators.auth import requires_authentication
 from flask import g, url_for, request, Blueprint, Response
 from splash.http.response import abort_if, abort_unless, json_response
-from splash.lib.images import hash_image_bytes, get_image_info_from_bytes
+from splash.lib.images import hash_image, get_image_info
 from loguru import logger
 
 images_bp = Blueprint('images', __name__, url_prefix='/images')
@@ -53,11 +53,14 @@ def upload_image():
     use_sharex = request.args.get('sharex', 'false').lower() == 'true'
     original_name = file.filename
 
-    file_contents = file.read(MAX_UPLOAD_SIZE + 1)
-    size = len(file_contents)
+    try:
+        file.seek(0, SEEK_END)
+        size = file.tell()
+    finally:
+        file.seek(0)
 
     abort_if(size > MAX_UPLOAD_SIZE, 400, message='Uploaded file must be less than or equal to %d bytes' % MAX_UPLOAD_SIZE)
-    is_valid, ext, content_type = get_image_info_from_bytes(file_contents)
+    is_valid, ext, content_type = get_image_info(file)
     abort_unless(is_valid, 400, message='Uploaded file must be an image')
     abort_unless(ext is not None and content_type is not None, 400, message='Uploaded image format is not supported')
 
@@ -65,7 +68,7 @@ def upload_image():
     extension = ext
     image_name = f'uploads/{uid}{extension}'
     deletion_key = IDGenerator.generate(64, prefix='delete')
-    sha256 = hash_image_bytes(file_contents)
+    sha256 = hash_image(file)
 
     db = cast(SASession, g.db)
     user = cast(User, g.user)
@@ -83,7 +86,7 @@ def upload_image():
     try:
         db.add(image)
         db.flush()
-        bucket.upload_fileobj(BytesIO(file_contents), image_name, ExtraArgs={'ContentType': content_type})
+        bucket.upload_fileobj(file.stream, image_name, ExtraArgs={'ContentType': content_type})
         uploaded = True
         db.commit()
 
