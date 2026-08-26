@@ -10,11 +10,14 @@ jobs:
         with:
           python-version: '3.13'
           cache: pip
+      - uses: azure/setup-helm@v4
       - run: pip install -r requirements-dev.txt
       - run: python -m compileall -q splash migrations dev.py
       - run: pytest -q
       - run: ruff check .
       - run: pip-audit -r requirements.txt
+      - run: helm lint chart
+      - run: helm template splash chart --namespace depthbomb > /dev/null
 
   build:
     needs: validate

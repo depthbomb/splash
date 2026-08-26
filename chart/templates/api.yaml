@@ -29,12 +29,18 @@ spec:
             httpGet:
               path: /health
               port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.ingress.host | quote }}
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health/ready
               port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.ingress.host | quote }}
             initialDelaySeconds: 2
             periodSeconds: 5
           securityContext:
