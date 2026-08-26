@@ -16,10 +16,10 @@ def requires_authentication(*, redirect_to_auth = False):
                     res = redirect(url_for('auth.start_flow'))
                     res.set_cookie(
                         'previous_url',
-                        previous_url_serializer.dumps(request.url),
+                        previous_url_serializer.dumps(request.full_path),
                         httponly=True,
                         samesite='Lax',
-                        secure=(request.is_secure or request.headers.get('X-Forwarded-Proto', '').lower() == 'https')
+                        secure=request.is_secure,
                     )
 
                     return res

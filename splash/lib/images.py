@@ -34,7 +34,7 @@ def get_image_info_from_bytes(contents: bytes) -> tuple[bool, Optional[str], Opt
             return False, None, None
 
         return True, extension, content_type
-    except:
+    except Exception:
         return False, None, None
 
 def hash_image(file_obj: FileStorage) -> str:

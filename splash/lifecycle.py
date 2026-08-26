@@ -2,6 +2,7 @@ from typing import cast
 from loguru import logger
 from sqlalchemy import or_
 from base64 import b64decode
+from binascii import Error as BinasciiError
 from splash.db import Session
 from splash.db.models import User
 from itsdangerous import BadSignature
@@ -70,12 +71,12 @@ def register_lifecycle_hooks(app: Flask) -> None:
             elif auth_header and auth_header.startswith('Basic '):
                 try:
                     encoded_credentials = auth_header.split(' ', 1)[1]
-                    decoded_credentials = b64decode(encoded_credentials).decode('utf-8')
-                    sub, basic_api_key = decoded_credentials.split(':', 1)
+                    decoded_credentials = b64decode(encoded_credentials, validate=True).decode('utf-8')
+                    sub, basic_api_key = decoded_credentials.rsplit(':', 1)
                     filters.append(
                         (User.sub == sub) & (User.api_key == basic_api_key)
                     )
-                except (ValueError, UnicodeDecodeError, IndexError):
+                except (BinasciiError, ValueError, UnicodeDecodeError, IndexError):
                     pass
 
             if filters:
@@ -121,4 +122,6 @@ def register_lifecycle_hooks(app: Flask) -> None:
 
     @app.teardown_appcontext
     def teardown(_):
-        cast(SASession, g.db).close()
+        db = getattr(g, 'db', None)
+        if db is not None:
+            cast(SASession, db).close()

@@ -2,10 +2,9 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: '{{ .Values.name }}-postgres'
-  metadata:
-    labels:
-      app.kubernetes.io/name: {{ .Values.name }}
-      app.kubernetes.io/component: postgres
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+    app.kubernetes.io/component: postgres
 spec:
   instances: {{ .Values.postgres.replicas }}
   bootstrap:

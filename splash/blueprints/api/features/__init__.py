@@ -9,7 +9,7 @@ features_bp = Blueprint('features', __name__, url_prefix='/_features')
 
 @features_bp.before_request
 def verify_app_secret() -> None:
-    incoming_secret = request.args.get('secret', None)
+    incoming_secret = request.headers.get('X-App-Secret')
 
     abort_if(incoming_secret is None, 401, message='Missing app secret key')
     abort_if(APP_SECRET == '', 503, message='App secret key not configured')

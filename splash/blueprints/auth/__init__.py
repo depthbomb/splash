@@ -2,6 +2,7 @@ from typing import cast
 from itsdangerous import BadData
 from splash.db.models import User
 from authlib.oauth2 import OAuth2Error
+from requests import RequestException
 from datetime import datetime, timedelta
 from splash.http.response import json_error
 from splash.lib.id_generator import IDGenerator
@@ -11,16 +12,18 @@ from splash.lib.rate_limits import get_or_create_bucket
 from authlib.integrations.requests_client import OAuth2Session
 from splash.serializers import previous_url_serializer, user_session_serializer
 from flask import g, abort, url_for, request, redirect, Response, Blueprint, after_this_request
-from splash.env import OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_TOKEN_ENDPOINT, OIDC_USERINFO_ENDPOINT, OIDC_AUTHORIZE_ENDPOINT
+from urllib.parse import urlsplit
+from splash.env import OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_TOKEN_ENDPOINT, OIDC_USERINFO_ENDPOINT, OIDC_AUTHORIZE_ENDPOINT, OIDC_TIMEOUT_SECONDS
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 auth_bucket = get_or_create_bucket('auth', '1/second')
 
 def _secure_cookie() -> bool:
-    if request.is_secure:
-        return True
+    return request.is_secure
 
-    return request.headers.get('X-Forwarded-Proto', '').lower() == 'https'
+def _is_local_redirect(target: str) -> bool:
+    parsed = urlsplit(target)
+    return parsed.scheme == '' and parsed.netloc == '' and target.startswith('/')
 
 @auth_bp.get('/start')
 def start_flow():
@@ -51,11 +54,21 @@ def callback():
         client = OAuth2Session(OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, state=state)
 
         try:
-            client.fetch_token(OIDC_TOKEN_ENDPOINT, code_verifier=code_verifier, authorization_response=request.url)
+            client.fetch_token(
+                OIDC_TOKEN_ENDPOINT,
+                code_verifier=code_verifier,
+                authorization_response=request.url,
+                timeout=OIDC_TIMEOUT_SECONDS,
+            )
         except OAuth2Error:
-            abort(500)
+            abort(400)
+        except RequestException:
+            abort(502)
 
-        user_info_req = client.get(OIDC_USERINFO_ENDPOINT)
+        try:
+            user_info_req = client.get(OIDC_USERINFO_ENDPOINT, timeout=OIDC_TIMEOUT_SECONDS)
+        except RequestException:
+            abort(502)
 
         if user_info_req.status_code != 200:
             res = json_error(400)
@@ -66,7 +79,8 @@ def callback():
             existing_user = db.query(User).filter(User.sub == user_info['sub']).first()
             if existing_user is None:
                 api_key = IDGenerator.generate(64, prefix='api')
-                is_admin = any(['tetra_admin' in grp or 'splash_admin' in grp for grp in cast(list[str], user_info['groups'])])
+                groups = set(cast(list[str], user_info['groups']))
+                is_admin = bool({'tetra_admin', 'splash_admin'} & groups)
                 user = User(
                         username=user_info['preferred_username'],
                         sub=user_info['sub'],
@@ -84,7 +98,7 @@ def callback():
             except BadData:
                 previous_url = ''
 
-            if previous_url != '':
+            if previous_url != '' and _is_local_redirect(previous_url):
                 res = redirect(previous_url)
                 res.delete_cookie('previous_url')
             else:

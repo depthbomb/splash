@@ -8,9 +8,10 @@ from splash.decorators.common import add_cache_control
 from sqlalchemy.orm.session import Session as SASession
 from splash.lib.rate_limits import get_or_create_bucket
 from splash.decorators.auth import requires_authentication
-from flask import g, abort, url_for, request, Blueprint, Response
+from flask import g, url_for, request, Blueprint, Response
 from splash.http.response import abort_if, abort_unless, json_response
 from splash.lib.images import hash_image_bytes, get_image_info_from_bytes
+from loguru import logger
 
 images_bp = Blueprint('images', __name__, url_prefix='/images')
 images_bucket = get_or_create_bucket('images', '2/second')
@@ -60,18 +61,15 @@ def upload_image():
     abort_unless(is_valid, 400, message='Uploaded file must be an image')
     abort_unless(ext is not None and content_type is not None, 400, message='Uploaded image format is not supported')
 
-    uid = IDGenerator.generate(8)
+    uid = IDGenerator.generate(16)
     extension = ext
     image_name = f'uploads/{uid}{extension}'
     deletion_key = IDGenerator.generate(64, prefix='delete')
     sha256 = hash_image_bytes(file_contents)
 
-    try:
-        bucket.upload_fileobj(BytesIO(file_contents), image_name, ExtraArgs={'ContentType': content_type})
-
-        db = cast(SASession, g.db)
-        user = cast(User, g.user)
-        image = Image(
+    db = cast(SASession, g.db)
+    user = cast(User, g.user)
+    image = Image(
                 uid=uid,
                 original_name=original_name,
                 extension=extension,
@@ -81,7 +79,12 @@ def upload_image():
                 sha256=sha256,
                 user_id=user.id
         )
+    uploaded = False
+    try:
         db.add(image)
+        db.flush()
+        bucket.upload_fileobj(BytesIO(file_contents), image_name, ExtraArgs={'ContentType': content_type})
+        uploaded = True
         db.commit()
 
         image_url = url_for('images.get_image', uid=f'{uid}{extension}', _external=True)
@@ -96,8 +99,14 @@ def upload_image():
             'url': image_url,
             'deletion_key': deletion_key
         }, status_code=201)
-    except:
-        abort(500)
+    except Exception:
+        db.rollback()
+        if uploaded:
+            try:
+                bucket.Object(image_name).delete()
+            except Exception:
+                logger.exception('Failed to remove uploaded object after database failure')
+        raise
 
 @images_bp.get('/<string:uid>')  # GET /images/<uid>
 @images_bucket.consume()
@@ -110,13 +119,16 @@ def get_image(uid: str):
     if '.' in uid:
         key = f'uploads/{uid}'
         obj = bucket.Object(key).get()
-        return Response(
-                obj['Body'].iter_chunks(chunk_size=8192),
+        body = obj['Body']
+        response = Response(
+                body.iter_chunks(chunk_size=8192),
                 mimetype=image.content_type,
                 headers={
                     'Content-Length': str(obj['ContentLength']),
                 }
         )
+        response.call_on_close(body.close)
+        return response
     else:
         return json_response({
             'original_name': image.original_name,
@@ -128,7 +140,6 @@ def get_image(uid: str):
         })
 
 @images_bp.delete('/<string:uid>/<string:deletion_key>')  # DELETE /images/<uid>/<deletion_key>
-@images_bp.get('/<string:uid>/<string:deletion_key>')  # GET /images/<uid>/<deletion_key>
 @images_bucket.consume(cost=2)
 def delete_image(uid: str, deletion_key: str):
     db = cast(SASession, g.db)
@@ -145,5 +156,6 @@ def delete_image(uid: str, deletion_key: str):
         db.commit()
 
         return json_response({})
-    except:
-        abort(500)
+    except Exception:
+        db.rollback()
+        raise

@@ -5,6 +5,10 @@ metadata:
   name: {{ .Values.name }}
   labels:
     app.kubernetes.io/name: {{ .Values.name }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   rules:
     - host: {{ .Values.ingress.host }}

@@ -1,6 +1,8 @@
 from os import getenv
 
 PORT = getenv('PORT', '8000')
+TRUSTED_PROXY_COUNT = int(getenv('TRUSTED_PROXY_COUNT', '0'))
+TRUSTED_HOSTS = [host.strip() for host in getenv('TRUSTED_HOSTS', '').split(',') if host.strip()]
 
 APP_SECRET = getenv('APP_SECRET', '')
 
@@ -21,3 +23,4 @@ OIDC_CLIENT_SECRET = getenv('OIDC_CLIENT_SECRET', '')
 OIDC_AUTHORIZE_ENDPOINT = getenv('OIDC_AUTHORIZE_ENDPOINT', 'https://auth.super.fish/application/o/authorize/')
 OIDC_TOKEN_ENDPOINT = getenv('OIDC_TOKEN_ENDPOINT', 'https://auth.super.fish/application/o/token/')
 OIDC_USERINFO_ENDPOINT = getenv('OIDC_USERINFO_ENDPOINT', 'https://auth.super.fish/application/o/userinfo/')
+OIDC_TIMEOUT_SECONDS = float(getenv('OIDC_TIMEOUT_SECONDS', '10'))

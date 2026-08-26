@@ -8,6 +8,7 @@ spec:
   type: {{ .Values.service.type }}
   selector:
     app.kubernetes.io/name: {{ .Values.name }}
+    app.kubernetes.io/component: api
   ports:
     - name: http
       port: {{ .Values.service.port }}

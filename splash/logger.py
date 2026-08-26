@@ -18,7 +18,7 @@ def configure_logging(app: Flask) -> None:
     logger.add(
             stdout,
             level="TRACE" if debug else "INFO",
-            format="{time:HH:mm:ss} │ <level>{level: <8}</level> │ <fg #fff>{message}</fg #fff>",
+            format="{time:HH:mm:ss} | <level>{level: <8}</level> | <fg #fff>{message}</fg #fff>",
             colorize=debug,
             backtrace=True,
             diagnose=debug,
