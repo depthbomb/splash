@@ -62,21 +62,24 @@ def register_lifecycle_hooks(app: Flask) -> None:
             filters = []
             if api_key:
                 filters.append(User.api_key == api_key)
-            elif cookie:
+            elif auth_header and auth_header.partition(' ')[0].casefold() == 'basic':
                 try:
-                    cookie_sub = user_session_serializer.loads(cookie)
-                    filters.append(User.sub == cookie_sub)
-                except BadSignature:
-                    pass
-            elif auth_header and auth_header.startswith('Basic '):
-                try:
-                    encoded_credentials = auth_header.split(' ', 1)[1]
+                    _, separator, encoded_credentials = auth_header.partition(' ')
+                    if separator == '':
+                        raise ValueError
+
                     decoded_credentials = b64decode(encoded_credentials, validate=True).decode('utf-8')
                     sub, basic_api_key = decoded_credentials.rsplit(':', 1)
                     filters.append(
                         (User.sub == sub) & (User.api_key == basic_api_key)
                     )
                 except (BinasciiError, ValueError, UnicodeDecodeError, IndexError):
+                    pass
+            elif cookie:
+                try:
+                    cookie_sub = user_session_serializer.loads(cookie)
+                    filters.append(User.sub == cookie_sub)
+                except BadSignature:
                     pass
 
             if filters:

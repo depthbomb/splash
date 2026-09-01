@@ -3,7 +3,7 @@ from itsdangerous import BadData
 from splash.db.models import User
 from authlib.oauth2 import OAuth2Error
 from requests import RequestException
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from splash.http.response import json_error
 from splash.lib.id_generator import IDGenerator
 from authlib.common.security import generate_token
@@ -45,6 +45,13 @@ def start_flow():
 @auth_bp.get('/callback')
 @auth_bucket.consume()
 def callback():
+    @after_this_request
+    def clear_cookies(res_: Response):
+        res_.delete_cookie('state')
+        res_.delete_cookie('cv')
+
+        return res_
+
     state = request.cookies.get('state', '', str)
     code_verifier = request.cookies.get('cv', '', str)
 
@@ -109,18 +116,11 @@ def callback():
             res.set_cookie(
                 'user',
                 user_session_serializer.dumps(user_info['sub']),
-                expires=datetime.now() + timedelta(days=365),
+                expires=datetime.now(timezone.utc) + timedelta(days=365),
                 httponly=True,
                 samesite='Lax',
                 secure=_secure_cookie()
             )
-
-    @after_this_request
-    def clear_cookies(res_: Response):
-        res_.delete_cookie('state')
-        res_.delete_cookie('cv')
-
-        return res_
 
     return res
 
