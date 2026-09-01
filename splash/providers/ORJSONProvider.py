@@ -1,7 +1,7 @@
 from typing import Any, Union
 from flask.json.provider import JSONProvider
 from orjson import loads, dumps, OPT_INDENT_2
-from flask import Flask, Response, make_response
+from flask import Flask, Response
 from splash.lib.features import Feature, get_feature
 
 class ORJSONProvider(JSONProvider):
@@ -16,16 +16,15 @@ class ORJSONProvider(JSONProvider):
         return loads(s)
 
     def dumps(self, obj: Any, **kwargs: Any) -> str:
-        if self._prettify_feature.enabled:
-            serialized = dumps(obj, option=OPT_INDENT_2)
-        else:
-            serialized = dumps(obj)
-
-        return serialized.decode('utf-8')
+        return self._serialize(obj).decode('utf-8')
 
     def response(self, *args: Any, **kwargs: Any) -> Response:
-        json = self.dumps(*args, **kwargs)
-        res = make_response(json)
-        res.content_type = 'application/json'
+        obj = self._prepare_response_obj(args, kwargs)
 
-        return res
+        return self._app.response_class(self._serialize(obj), mimetype='application/json')
+
+    def _serialize(self, obj: Any) -> bytes:
+        if self._prettify_feature.enabled:
+            return dumps(obj, option=OPT_INDENT_2)
+
+        return dumps(obj)

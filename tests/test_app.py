@@ -1,4 +1,4 @@
-from flask import request
+from flask import jsonify, request
 
 from splash.app import create_app
 from splash.db import engine
@@ -53,3 +53,13 @@ def test_delete_capability_get_route_is_absent():
     response = create_app().test_client().get('/images/image-id/delete-key')
 
     assert response.status_code == 404
+
+
+def test_json_provider_supports_keyword_payloads():
+    app = create_app()
+    app.add_url_rule('/json-keywords', view_func=lambda: jsonify(answer=42))
+
+    response = app.test_client().get('/json-keywords')
+
+    assert response.status_code == 200
+    assert response.get_json() == {'answer': 42}
