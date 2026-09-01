@@ -2,15 +2,15 @@ from typing import cast
 from orjson import dumps
 from base64 import b64encode
 from splash.db.models import User
-from splash.decorators.common import add_cache_control
 from flask import g, url_for, request, Response, Blueprint
+from splash.decorators.common import no_cache_control
 from splash.decorators.auth import requires_authentication
 
 sharex_bp = Blueprint('sharex', __name__, url_prefix='/sharex')
 
 @sharex_bp.get('/')  # GET /sharex
+@no_cache_control
 @requires_authentication(redirect_to_auth=True)
-@add_cache_control(max_age=60 * 60)
 def get_config():
     use_raw = request.args.get('raw', 'false').lower() == 'true'
     user = cast(User, g.user)

@@ -5,12 +5,13 @@ from splash.db.models import User
 from flask import g, url_for, redirect, Blueprint
 from splash import MAX_PIXEL_SIZE, MAX_UPLOAD_SIZE
 from splash.http.response import plaintext_response
-from splash.decorators.common import add_cache_control
+from splash.decorators.common import add_cache_control, no_cache_control
 from splash.decorators.auth import requires_authentication
 
 index_bp = Blueprint('index', __name__)
 
 @index_bp.get('/')
+@no_cache_control
 @requires_authentication(redirect_to_auth=True)
 def index():
     user = cast(User, g.user)
@@ -19,9 +20,9 @@ def index():
 
     return plaintext_response('\n'.join([
         "   .---. ,---.  ,-.      .--.     .---. .-. .-. ",
-        "  ( .-._)| .-.\ | |     / /\ \   ( .-._)| | | | ",
-        " (_) \   | |-' )| |    / /__\ \ (_) \   | `-' | ",
-        " _  \ \  | |--' | |    |  __  | _  \ \  | .-. | ",
+        r"  ( .-._)| .-.\ | |     / /\ \   ( .-._)| | | | ",
+        r" (_) \   | |-' )| |    / /__\ \ (_) \   | `-' | ",
+        r" _  \ \  | |--' | |    |  __  | _  \ \  | .-. | ",
         "( `-'  ) | |    | `--. | |  |)|( `-'  ) | | |)| ",
         " `----'  /(     |( __.'|_|  (_) `----'  /(  (_) ",
         "        (__)    (_)                    (__)     ",
