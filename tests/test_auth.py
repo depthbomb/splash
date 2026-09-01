@@ -78,3 +78,34 @@ def test_failed_oidc_callback_clears_transient_cookies(monkeypatch):
     assert response.status_code == 400
     assert any(cookie.startswith('state=;') for cookie in response_cookies)
     assert any(cookie.startswith('cv=;') for cookie in response_cookies)
+
+
+def test_malformed_oidc_user_info_is_reported_as_upstream_failure(monkeypatch):
+    class InvalidUserInfoResponse:
+        status_code = 200
+
+        def json(self):
+            raise ValueError('invalid JSON')
+
+    class InvalidUserInfoOAuthSession:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def fetch_token(self, *_args, **_kwargs):
+            pass
+
+        def get(self, *_args, **_kwargs):
+            return InvalidUserInfoResponse()
+
+    monkeypatch.setattr(auth_blueprint, 'OAuth2Session', InvalidUserInfoOAuthSession)
+    client = create_app().test_client()
+    client.set_cookie('state', 'expected-state')
+    client.set_cookie('cv', 'code-verifier')
+
+    response = client.get(
+        '/auth/callback?code=code&state=expected-state',
+        environ_overrides={'REMOTE_ADDR': '203.0.113.45'},
+    )
+
+    assert response.status_code == 502
+    assert response.get_json()['result']['message'] == 'OIDC user info response is invalid'

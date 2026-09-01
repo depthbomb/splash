@@ -80,18 +80,36 @@ def callback():
         if user_info_req.status_code != 200:
             res = json_error(400)
         else:
-            db = cast(SASession, g.db)
+            try:
+                user_info = user_info_req.json()
+                sub = user_info['sub']
+                if not isinstance(sub, str) or sub == '':
+                    raise ValueError('OIDC sub claim must be a non-empty string')
+            except (KeyError, TypeError, ValueError, RequestException):
+                return json_error(502, message='OIDC user info response is invalid')
 
-            user_info = user_info_req.json()
-            existing_user = db.query(User).filter(User.sub == user_info['sub']).first()
+            db = cast(SASession, g.db)
+            existing_user = db.query(User).filter(User.sub == sub).first()
             if existing_user is None:
+                try:
+                    username = user_info['preferred_username']
+                    email = user_info['email']
+                    groups = user_info.get('groups', [])
+                    if not isinstance(username, str) or username == '':
+                        raise ValueError('OIDC preferred_username claim must be a non-empty string')
+                    if not isinstance(email, str) or email == '':
+                        raise ValueError('OIDC email claim must be a non-empty string')
+                    if not isinstance(groups, list) or not all(isinstance(group, str) for group in groups):
+                        raise ValueError('OIDC groups claim must be a list of strings')
+                except (KeyError, TypeError, ValueError):
+                    return json_error(502, message='OIDC user info response is invalid')
+
                 api_key = IDGenerator.generate(64, prefix='api')
-                groups = set(cast(list[str], user_info['groups']))
-                is_admin = bool({'tetra_admin', 'splash_admin'} & groups)
+                is_admin = bool({'tetra_admin', 'splash_admin'} & set(groups))
                 user = User(
-                        username=user_info['preferred_username'],
-                        sub=user_info['sub'],
-                        email=user_info['email'],
+                        username=username,
+                        sub=sub,
+                        email=email,
                         api_key=api_key,
                         admin=is_admin,
                 )
@@ -115,7 +133,7 @@ def callback():
 
             res.set_cookie(
                 'user',
-                user_session_serializer.dumps(user_info['sub']),
+                user_session_serializer.dumps(sub),
                 expires=datetime.now(timezone.utc) + timedelta(days=365),
                 httponly=True,
                 samesite='Lax',
