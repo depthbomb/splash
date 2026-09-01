@@ -1,14 +1,28 @@
-from secrets import choice
 from typing import Callable, Optional
+from secrets import token_bytes
 from string import digits, ascii_uppercase
 
 class IDGenerator:
     _characters: str = ascii_uppercase + digits
-    _unavailable: list[str] = []
+    _unavailable: set[str] = set()
 
     @staticmethod
     def _random_chars(length: int) -> str:
-        return ''.join(choice(IDGenerator._characters) for _ in range(length))
+        character_count = len(IDGenerator._characters)
+        unbiased_limit = 256 - (256 % character_count)
+        characters = []
+
+        while len(characters) < length:
+            remaining = length - len(characters)
+            byte_count = (remaining * 256 + unbiased_limit - 1) // unbiased_limit
+            random_bytes = token_bytes(byte_count)
+            characters.extend(
+                IDGenerator._characters[value % character_count]
+                for value in random_bytes
+                if value < unbiased_limit
+            )
+
+        return ''.join(characters[:length])
 
     @staticmethod
     def generate(length: int, *, prefix: Optional[str] = None) -> str:
@@ -51,7 +65,8 @@ class IDGenerator:
 
             id_ = IDGenerator.generate(length, prefix=prefix)
 
-        IDGenerator._unavailable.append(id_)
+        IDGenerator._unavailable.add(id_)
+
         return id_
 
     @staticmethod
