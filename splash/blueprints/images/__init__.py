@@ -13,6 +13,8 @@ from splash.http.response import abort_if, abort_unless, json_response
 from splash.lib.images import hash_image, get_image_info
 from loguru import logger
 
+DOWNLOAD_CHUNK_SIZE = 64 * 1024
+
 images_bp = Blueprint('images', __name__, url_prefix='/images')
 images_bucket = get_or_create_bucket('images', '2/second')
 
@@ -82,12 +84,12 @@ def upload_image():
                 sha256=sha256,
                 user_id=user.id
         )
-    uploaded = False
+    upload_started = False
     try:
         db.add(image)
         db.flush()
+        upload_started = True
         bucket.upload_fileobj(file.stream, image_name, ExtraArgs={'ContentType': content_type})
-        uploaded = True
         db.commit()
 
         image_url = url_for('images.get_image', uid=f'{uid}{extension}', _external=True)
@@ -104,7 +106,7 @@ def upload_image():
         }, status_code=201)
     except Exception:
         db.rollback()
-        if uploaded:
+        if upload_started:
             try:
                 bucket.Object(image_name).delete()
             except Exception:
@@ -121,10 +123,20 @@ def get_image(uid: str):
 
     if '.' in uid:
         key = f'uploads/{uid}'
-        obj = bucket.Object(key).get()
+        bucket_object = bucket.Object(key)
+        if request.method == 'HEAD':
+            bucket_object.load()
+
+            return Response(
+                status=200,
+                mimetype=image.content_type,
+                headers={'Content-Length': str(bucket_object.content_length)},
+            )
+
+        obj = bucket_object.get()
         body = obj['Body']
         response = Response(
-                body.iter_chunks(chunk_size=8192),
+                body.iter_chunks(chunk_size=DOWNLOAD_CHUNK_SIZE),
                 mimetype=image.content_type,
                 headers={
                     'Content-Length': str(obj['ContentLength']),

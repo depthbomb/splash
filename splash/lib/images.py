@@ -1,9 +1,9 @@
-from PIL import Image
 from io import BytesIO
-from hashlib import sha256
-from typing import Optional
+from typing import BinaryIO, Optional
+from hashlib import sha256, file_digest
+from PIL import Image
 from splash import MAX_PIXEL_SIZE
-from werkzeug.datastructures import FileStorage  # noqa
+from werkzeug.datastructures import FileStorage
 
 Image.MAX_IMAGE_PIXELS = MAX_PIXEL_SIZE
 
@@ -14,19 +14,27 @@ _FORMAT_TO_EXTENSION = {
     'WEBP': '.webp',
 }
 
+def _get_verified_image_info(file_obj: BinaryIO) -> tuple[bool, Optional[str], Optional[str]]:
+    with Image.open(file_obj) as image:
+        width, height = image.size
+        if width * height > MAX_PIXEL_SIZE:
+            return False, None, None
+
+        image_format = image.format
+        image.verify()
+
+    extension = _FORMAT_TO_EXTENSION.get(image_format)
+    content_type = Image.MIME.get(image_format) if image_format is not None else None
+    if image_format is None or extension is None or content_type is None:
+        return False, None, None
+
+    return True, extension, content_type
+
 def get_image_info(file_obj: FileStorage) -> tuple[bool, Optional[str], Optional[str]]:
     try:
         file_obj.seek(0)
-        with Image.open(file_obj.stream) as img:
-            img.verify()
-            image_format = img.format
 
-        extension = _FORMAT_TO_EXTENSION.get(image_format)
-        content_type = Image.MIME.get(image_format) if image_format is not None else None
-        if image_format is None or extension is None or content_type is None:
-            return False, None, None
-
-        return True, extension, content_type
+        return _get_verified_image_info(file_obj.stream)
     except Exception:
         return False, None, None
     finally:
@@ -34,25 +42,16 @@ def get_image_info(file_obj: FileStorage) -> tuple[bool, Optional[str], Optional
 
 def get_image_info_from_bytes(contents: bytes) -> tuple[bool, Optional[str], Optional[str]]:
     try:
-        with Image.open(BytesIO(contents)) as img:
-            img.verify()
-            image_format = img.format
-
-        extension = _FORMAT_TO_EXTENSION.get(image_format)
-        content_type = Image.MIME.get(image_format) if image_format is not None else None
-        if image_format is None or extension is None or content_type is None:
-            return False, None, None
-
-        return True, extension, content_type
+        return _get_verified_image_info(BytesIO(contents))
     except Exception:
         return False, None, None
 
 def hash_image(file_obj: FileStorage) -> str:
     try:
         file_obj.seek(0)
-        digest = sha256()
-        while chunk := file_obj.read(128 * 1024):
-            digest.update(chunk)
+
+        digest = file_digest(file_obj.stream, 'sha256')
+
         return digest.hexdigest()
     finally:
         file_obj.seek(0)
