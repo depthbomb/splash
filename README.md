@@ -22,5 +22,5 @@
   - `OIDC_CLIENT_SECRET`
   - `OIDC_TOKEN_ENDPOINT`
   - `OIDC_USERINFO_ENDPOINT`
-- Run `python -m splash.migrate` to apply database migrations
+- Run `yoyo apply --batch` to apply database migrations
 - Start the development server with `python -m flask --app dev.py run` and the `FLASK_DEBUG=1` environment variable set to enable code reloading

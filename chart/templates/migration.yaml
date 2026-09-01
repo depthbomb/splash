@@ -18,7 +18,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: splash
-          command: ["python", "-m", "splash.migrate"]
+          command: ["yoyo", "apply", "--batch"]
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
