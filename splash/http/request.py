@@ -38,4 +38,8 @@ def get_request_payload(req: Optional[Request] = None) -> Optional[Union[Immutab
     if req is None:
         req = request
 
-    return get_plaintext_payload(req) or get_form_payload(req)
+    plaintext_payload = get_plaintext_payload(req)
+    if plaintext_payload is not None:
+        return plaintext_payload
+
+    return get_form_payload(req)

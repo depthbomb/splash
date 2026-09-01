@@ -31,11 +31,12 @@ def add_cache_control(*, max_age: int = 60, etag_getter: Optional[Callable[..., 
             supports_conditional = request.method in ('GET', 'HEAD')
             etag = etag_getter(*args, **kwargs) if etag_getter is not None else None
 
-            if supports_conditional and etag is not None and request.if_none_match.contains(etag):
+            if supports_conditional and etag is not None and request.if_none_match.contains_weak(etag):
                 res = make_response('', 304)
                 res.cache_control.public = True
                 res.cache_control.max_age = max_age
                 res.set_etag(etag)
+
                 return res
 
             res = make_response(view_func(*args, **kwargs))
