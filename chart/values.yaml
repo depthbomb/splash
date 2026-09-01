@@ -1,7 +1,5 @@
 name: splash
-# Rate limits and runtime feature flags are process-local; keep one replica until
-# those controls use a shared store.
-replicas: 1
+replicas: 2
 
 service:
   type: ClusterIP

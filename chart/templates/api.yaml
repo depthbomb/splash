@@ -25,31 +25,10 @@ spec:
           ports:
             - name: http
               containerPort: 8080
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /health/ready
-              port: http
-            initialDelaySeconds: 2
-            periodSeconds: 5
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
-            runAsNonRoot: true
           envFrom:
             - secretRef:
                 name: {{ .Values.name }}-config
           env:
-            - name: TRUSTED_PROXY_COUNT
-              value: "1"
-            - name: TRUSTED_HOSTS
-              value: {{ .Values.ingress.host | quote }}
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
