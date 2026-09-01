@@ -2,14 +2,14 @@ from flask import Flask
 from loguru import logger
 from splash.env import APP_SECRET
 from splash import MAX_UPLOAD_SIZE
-from werkzeug.middleware.proxy_fix import ProxyFix
-from splash.env import OIDC_TIMEOUT_SECONDS, TRUSTED_HOSTS, TRUSTED_PROXY_COUNT
 from splash.logger import configure_logging
 from splash.blueprints import register_blueprints
+from werkzeug.middleware.proxy_fix import ProxyFix
 from splash.lifecycle import register_lifecycle_hooks
 from splash.error_handlers import register_error_handlers
 from splash.providers.ORJSONProvider import ORJSONProvider
 from splash.lib.features import get_all_features, create_feature_flag
+from splash.env import TRUSTED_HOSTS, TRUSTED_PROXY_COUNT, OIDC_TIMEOUT_SECONDS
 
 def _validate_runtime_config() -> None:
     if APP_SECRET.strip() == '':

@@ -1,7 +1,7 @@
 from flask import request
 from hmac import compare_digest
-from flask import Response, Blueprint
 from splash.env import APP_SECRET
+from flask import Response, Blueprint
 from splash.http.response import abort_if, json_response
 from splash.lib.features import get_feature, get_all_features, get_enabled_features, get_disabled_features
 

@@ -2,10 +2,10 @@ from typing import cast
 from loguru import logger
 from sqlalchemy import or_
 from base64 import b64decode
-from binascii import Error as BinasciiError
 from splash.db import Session
 from splash.db.models import User
 from itsdangerous import BadSignature
+from binascii import Error as BinasciiError
 from splash.lib.features import get_feature
 from splash.lib.id_generator import IDGenerator
 from splash.serializers import user_session_serializer

@@ -1,8 +1,8 @@
+from PIL import Image
 from io import BytesIO
+from splash import MAX_PIXEL_SIZE
 from typing import BinaryIO, Optional
 from hashlib import sha256, file_digest
-from PIL import Image
-from splash import MAX_PIXEL_SIZE
 from werkzeug.datastructures import FileStorage
 
 Image.MAX_IMAGE_PIXELS = MAX_PIXEL_SIZE

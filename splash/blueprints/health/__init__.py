@@ -1,8 +1,8 @@
 from typing import cast
-from flask import g, Response, Blueprint
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from flask import g, Response, Blueprint
+from sqlalchemy.exc import SQLAlchemyError
 
 health_bp = Blueprint('health', __name__, url_prefix='/health')
 

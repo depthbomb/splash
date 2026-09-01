@@ -3,9 +3,9 @@ from threading import Lock
 from functools import wraps
 from typing import Optional
 from flask import g, request
-from splash.http.response import json_error
 from limits import parse, RateLimitItem
 from limits.storage import MemoryStorage
+from splash.http.response import json_error
 from splash.lib.id_generator import IDGenerator
 from limits.strategies import FixedWindowRateLimiter
 

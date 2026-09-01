@@ -2,9 +2,9 @@ from typing import cast
 from orjson import dumps
 from base64 import b64encode
 from splash.db.models import User
-from flask import g, url_for, request, Response, Blueprint
 from splash.decorators.common import no_cache_control
 from splash.decorators.auth import requires_authentication
+from flask import g, url_for, request, Response, Blueprint
 
 sharex_bp = Blueprint('sharex', __name__, url_prefix='/sharex')
 

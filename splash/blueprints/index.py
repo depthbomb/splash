@@ -5,8 +5,8 @@ from splash.db.models import User
 from flask import g, url_for, redirect, Blueprint
 from splash import MAX_PIXEL_SIZE, MAX_UPLOAD_SIZE
 from splash.http.response import plaintext_response
-from splash.decorators.common import add_cache_control, no_cache_control
 from splash.decorators.auth import requires_authentication
+from splash.decorators.common import no_cache_control, add_cache_control
 
 index_bp = Blueprint('index', __name__)
 

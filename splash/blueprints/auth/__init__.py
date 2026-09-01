@@ -1,19 +1,26 @@
 from typing import cast
 from itsdangerous import BadData
+from urllib.parse import urlsplit
 from splash.db.models import User
 from authlib.oauth2 import OAuth2Error
 from requests import RequestException
-from datetime import datetime, timedelta, timezone
 from splash.http.response import json_error
 from splash.lib.id_generator import IDGenerator
+from datetime import datetime, timezone, timedelta
 from authlib.common.security import generate_token
 from sqlalchemy.orm.session import Session as SASession
 from splash.lib.rate_limits import get_or_create_bucket
 from authlib.integrations.requests_client import OAuth2Session
 from splash.serializers import previous_url_serializer, user_session_serializer
 from flask import g, abort, url_for, request, redirect, Response, Blueprint, after_this_request
-from urllib.parse import urlsplit
-from splash.env import OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_TOKEN_ENDPOINT, OIDC_USERINFO_ENDPOINT, OIDC_AUTHORIZE_ENDPOINT, OIDC_TIMEOUT_SECONDS
+from splash.env import (
+    OIDC_CLIENT_ID,
+    OIDC_CLIENT_SECRET,
+    OIDC_TOKEN_ENDPOINT,
+    OIDC_TIMEOUT_SECONDS,
+    OIDC_USERINFO_ENDPOINT,
+    OIDC_AUTHORIZE_ENDPOINT
+)
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 auth_bucket = get_or_create_bucket('auth', '1/second')

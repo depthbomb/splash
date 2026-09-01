@@ -1,7 +1,7 @@
 from typing import Any, Union
+from flask import Flask, Response
 from flask.json.provider import JSONProvider
 from orjson import loads, dumps, OPT_INDENT_2
-from flask import Flask, Response
 from splash.lib.features import Feature, get_feature
 
 class ORJSONProvider(JSONProvider):

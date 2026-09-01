@@ -1,5 +1,5 @@
-from typing import Callable, Optional
 from secrets import token_bytes
+from typing import Callable, Optional
 from string import digits, ascii_uppercase
 
 class IDGenerator:

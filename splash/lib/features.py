@@ -46,7 +46,7 @@ class Feature(object):
         return self._enabled
 
     @property
-    def description(self) -> str:
+    def description(self) -> Optional[str]:
         return self._description
 
     def get_value(self) -> _T:

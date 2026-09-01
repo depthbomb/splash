@@ -16,7 +16,7 @@ def abort_unless(predicate: bool, status_code: int, *, message: Optional[str] = 
     if not predicate:
         abort(status_code, message)
 
-def json_error(status_code: int, *, message: str = None, headers: Optional[dict[str, str]] = None) -> _FlaskResponse:
+def json_error(status_code: int, *, message: Optional[str] = None, headers: Optional[dict[str, str]] = None) -> _FlaskResponse:
     message = message or get_status_code_phrase(status_code)
     return json_response({ 'message': message }, status_code=status_code, headers=headers)
 
@@ -33,7 +33,7 @@ def json_response(data: _SerializablePayload, *, status_code: int = 200, headers
 
     return res
 
-def plaintext_response(text: str, *, status_code: int = 200, headers: dict[str, str] = None) -> _FlaskResponse:
+def plaintext_response(text: str, *, status_code: int = 200, headers: Optional[dict[str, str]] = None) -> _FlaskResponse:
     res = make_response(text)
     res.status_code = status_code
     res.content_type = 'text/plain'

@@ -1,4 +1,5 @@
 from os import SEEK_END
+from loguru import logger
 from splash.lib.b2 import bucket
 from typing import cast, Optional
 from splash import MAX_UPLOAD_SIZE
@@ -7,11 +8,10 @@ from splash.lib.id_generator import IDGenerator
 from splash.decorators.common import add_cache_control
 from sqlalchemy.orm.session import Session as SASession
 from splash.lib.rate_limits import get_or_create_bucket
+from splash.lib.images import hash_image, get_image_info
 from splash.decorators.auth import requires_authentication
 from flask import g, url_for, request, Blueprint, Response
 from splash.http.response import abort_if, abort_unless, json_response
-from splash.lib.images import hash_image, get_image_info
-from loguru import logger
 
 DOWNLOAD_CHUNK_SIZE = 64 * 1024
 
